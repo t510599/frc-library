@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- Tocas UI：CSS 與元件 -->
+    <link rel="stylesheet" href="assets/tocas.css">
+    <!-- Tocas JS：模塊與 JavaScript 函式 -->
+    <script src="assets/tocas.js"></script>
+    <title>Face Recognition</title>
+    <style>
+        .close.button {
+            position: absolute;
+            z-index: 3;
+            right: 2em;
+            top: 3.5em;
+        }
+        #stream {
+            width: 60%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="ts fluid container">
+        <div class="ts top attached fluid large menu">
+            <div class="ts narrow container">
+                <a href="#" class="item" data-tab="train">訓練</a>
+                <a href="#" class="active item" data-tab="show">即時串流</a>
+            </div>
+        </div>
+
+        <div class="ts clearing tertiary bottom attached center aligned tab segment" data-tab="train">
+            <div class="ts fluid heading slate">
+                <div class="large header">
+                    訓練
+                </div>
+                <div class="description">
+                    將照片加入資料庫
+                </div>
+            </div>
+            <div class="ts narrow container">
+                <div class="ts stackable form">
+                    <div class="fields">
+                        <div class="eight wide field">
+                            <label>預覽</label>
+                            <video autoplay="" width="480" height="360"></video>
+                            <div class="ts toggle checkbox">
+                                <input type="checkbox" id="camera" autocomplete="off">
+                                <label for="camera">鏡頭開關</label>
+                            </div>
+                        </div>
+                        <div class="eight wide field" id="canvasContainer">
+                            <label>圖片</label>
+                            <canvas width="480" height="360"></canvas>
+                            <button class="ts close button"></button>
+                        </div>
+                    </div>
+                    <div class="ts horizontal divider">或</div>
+                    <div class="left aligned field">
+                        <label>選擇圖片</label>
+                        <input type="file" name="file" id="file" accept="image/*">
+                        <button class="ts close button"></button>
+                    </div>
+                    <div class="field">
+                        <input type="text" name="name" id="name" placeholder="請輸入名字" autocomplete="off">
+                    </div>
+                    <div class="ts right floated separated buttons">
+                        <button class="ts capture inverted button">拍照</button>
+                        <button class="ts submit primary button">送出</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ts basic bottom attached fitted active tab segment" data-tab="show">
+            <div class="ts fluid heading slate">
+                <div class="ts narrow container">
+                    <div class="large header">
+                        即時影像串流服務
+                    </div>
+                    <div class="description">
+                        照到了誰？
+                    </div>
+                </div>
+            </div>
+            <div class="ts fluid borderless bottom attached center aligned tertiary segment">
+                <img src="/api/identify" id="stream">
+            </div>
+        </div>
+    </div>
+    <!-- Anchor -->
+    <div class="ts snackbar">
+        <div class="content"></div>
+    </div>
+    <script src="assets/axios.min.js"></script>
+    <script>
+        var $ = (selector) => {
+            return document.querySelector(selector);
+        }
+        var click = (selector, callback) => {
+            let el = $(selector);
+            el.addEventListener('click', callback);
+        }
+
+        ts('.menu .item').tab();
+
+        var formData;
+        var cameraEnabled = false;
+        var captured = false;
+        var video = $('video');
+        var videoStream;
+
+        var streamSource = $('#stream').src;
+
+        var canvas = $('canvas');
+
+        click('#camera', (e) => {
+            let checkbox = e.target;
+            if (checkbox.checked) {
+                startVideo();
+            } else {
+                stopVideo();
+            }
+        });
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({video: true, audio: false}).then((stream) => {
+                videoStream = stream;
+
+                if ('srcObject' in video) {
+                    video.srcObject = stream;
+                } else {
+                    video.src = window.URL.createObjectURL(stream);
+                }
+
+            }).catch((err) => {
+                console.error(err);
+            });
+            cameraEnabled = true;
+        }
+
+        click('.item[data-tab="train"]', (e) => {
+            $('#stream').src = ""; // release cam
+            $('#camera').checked = false;
+        });
+        click('.item[data-tab="show"]', (e) => {
+            $('#stream').src = streamSource;
+            stopVideo();
+        });
+        click('#canvasContainer .close.button', (e) => {
+            let ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            captured = false;
+        });
+
+        function stopVideo() {
+            let tracks = videoStream.getTracks();
+
+            tracks.forEach((t, _i) => {
+                t.stop();
+            });
+
+            video.srcObject = null;
+            cameraEnabled = false;
+        }
+
+        click('.capture', (e) => {
+            if (!cameraEnabled) {
+                snackbar('請先開啟相機。');
+                return false;
+            }
+            let ctx = canvas.getContext('2d');
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            var dataBlob = canvas.toBlob((blob) => {
+                formData = new FormData();
+                formData.append('file', blob, "camera.png");
+                captured = true;
+            });
+        });
+
+        $('#file').addEventListener('change', (e) => {
+            let el = e.target;
+            formData = new FormData();
+            if (el.files.length) {
+                formData.append('file', el.files[0]);
+            }
+        });
+
+        click('input + button.close', (e) => {
+            $('#file').value = ""; // reset
+        });
+
+        click('.submit', (e) => {
+            if (formData instanceof FormData) {
+                let name = $('#name');
+                if (name.value != "") {
+                    formData.append("name", name.value);
+                } else {
+                    snackbar("名字不能為空！");
+                    return false;
+                }
+
+                if (!formData.has("file")) {
+                    if ($('#file').files.length) {
+                        formData.append('file', $('#file').files[0]);
+                    } else {
+                        snackbar('請拍照或是選取圖片。');
+                    }
+                }
+
+                axios.request({
+                    method: "PUT",
+                    data: formData,
+                    url: "/api/train"
+                }).then((res) => {
+                    if (res.data.status == "succeed") {
+                        snackbar('上傳成功！');
+                    }
+
+                    switch (res.data.message) {
+                        case "no_file":
+                            snackbar('沒有檔案。');
+                            break;
+                        case "no_name":
+                            snackbar('沒有名字。');
+                            break;
+                    }
+                }).catch((err) => {
+                    console.error(err.response);
+                });
+            } else {
+                snackbar('請拍照或是選取圖片。');
+            }
+        });
+
+        function snackbar(message) {
+            ts('.snackbar').snackbar({
+                content: message
+            });
+        }
+    </script>
+</body>
+</html>
