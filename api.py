@@ -1,5 +1,4 @@
 from face_recognition import face_locations, face_encodings, face_distance, load_image_file
-from cv2 import resize
 from numpy import argmin
 class NoFaceDetectedError(Exception):
 	pass
