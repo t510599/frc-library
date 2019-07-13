@@ -57,11 +57,27 @@ def gen(camera):
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
+#page provider
 @app.route('/')
 def index():
     with open('templates/index.html', 'r') as f:
         return f.read()
-    # render_template('index.html')
+
+@app.route('/register')
+def register():
+    with open('templates/register.html', 'r') as f:
+        return f.read()
+
+@app.route('/barcode')
+def barcode():
+    with open('templates/barcode.html', 'r') as f:
+        return f.read()
+
+@app.route('/user')
+def user():
+    with open('templates/user.html', 'r') as f:
+        return f.read()
+
 
 @app.route('/api/train', methods=['PUT'])
 def train():
