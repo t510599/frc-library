@@ -21,7 +21,7 @@ USE `frc_library` ;
 -- Table `frc_library`.`user`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `frc_library`.`user` (
-  `username` VARCHAR(16) NOT NULL,
+  `username` VARCHAR(16) NOT NULL UNIQUE,
   `user_id` INT(10) NOT NULL,
   `encoding` TEXT NOT NULL,
   PRIMARY KEY (`user_id`));
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `frc_library`.`user` (
 CREATE TABLE IF NOT EXISTS `frc_library`.`books` (
   `book_id` INT NOT NULL,
   `name` VARCHAR(45) NOT NULL,
-  `lent` TINYINT NOT NULL DEFAULT 0,
+  `lent` TINYINT(1) NOT NULL DEFAULT 0,
   `borrower_id` INT(10) NULL,
   `time` TIMESTAMP NULL,
   PRIMARY KEY (`book_id`))
