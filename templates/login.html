@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- Tocas UI：CSS 與元件 -->
+    <link rel="stylesheet" href="assets/tocas.css">
+    <!-- Tocas JS：模塊與 JavaScript 函式 -->
+    <script src="assets/tocas.js"></script>
+    <link rel="stylesheet" href="assets/animate.css">
+    <title>Self-service Library</title>
+    <style>
+        strong {
+            font-weight: 800;
+        }
+
+        div.wrapper {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        div.imageContainer {
+            position: relative !important;
+            box-sizing: content-box;
+            width: 300px;
+            height: 300px;
+            margin: auto;
+        }
+
+        .identifying::before {
+            animation-name: hue;
+            animation-duration: 3s;
+            animation-iteration-count: infinite;
+            content: '';
+            display: block;
+            border-radius: 50%;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            bottom: -10px;
+            left: -10px;
+            background-image: linear-gradient(90deg, #f35626 0%,#feab3a 100%);
+            transition: background-image 0.5s;
+        }
+
+        .identified::before {
+            content: '';
+            display: block;
+            border-radius: 50%;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            bottom: -10px;
+            left: -10px;
+            transition: background-color 0.5s ease-out;
+            background-color: hsl(97, 100%, 50%);
+        }
+
+        .animated.infinite {
+            animation-iteration-count: infinite;
+            animation-duration: 2s;
+        }
+
+        @keyframes hue {
+            from {
+                filter: hue-rotate(0deg);
+            }
+            to {
+                filter: hue-rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="ts center aligned narrow container" style="width: 100vw;">
+            <div class="ts big center aligned slate">
+                <i class="user icon"></i>
+                <span class="header">登入</span>
+                <span class="description"></span>
+                <div class="action">
+                    <div class="ts input">
+                        <input type="text" placeholder="讀者帳號">
+                    </div>
+                    <button class="ts primary button" id="submit">送出</button>
+                </div>
+            </div>
+            <div class="ts divider"></div>
+            <button class="ts basic button" id="return">回首頁</button>
+        </div>
+    </div>
+    <!-- Anchor -->
+    <div class="ts snackbar">
+        <div class="content"></div>
+    </div>
+    <script src="assets/axios.min.js"></script>
+    <script>
+        HTMLElement.prototype.on = function(eventName, callback) {
+            this.addEventListener(eventName, callback);
+        }
+
+        var $ = (selector) => { return document.querySelector(selector); }
+        var $$ = (selector) => { return document.querySelectorAll(selector); }
+
+        $('#submit').on('click', async () => {
+            let username = $('.ts.slate input').value
+            try {
+                /*let res = await axios.request({
+                    url: '/api/login',
+                    method: "POST",
+                    data: {
+                        "username": username
+                    }
+                });*/
+
+                sessionStorage.setItem("username", username);
+                enableStream();
+            } catch (error) {
+                console.log(error);
+                if (error.response) {
+                    let data = JSON.parse(error.response.data);
+                    snackbar("Error occurred: " + data.state);
+                } else {
+                    snackbar("Error occurred: " + error.message);
+                }
+
+                return false;
+            }
+        });
+
+        async function enableStream() {
+            // camera is controlled by the backend, so we just get stream from server
+            $('.ts.slate > .action').innerHTML = `<div class="identifying imageContainer">
+                <img class="ts medium circular image" src="a.jpg">
+            </div>`;
+
+            let description = $('.ts.slate span.description');
+            description.textContent = `辨識中`;
+            description.classList.add('animated', 'flash', 'infinite');
+
+            // long polling until server identified user
+            try {
+                /*let res = await axios.request({
+                    url: `/get_state`,
+                    method: `GET`
+                });*/
+
+
+                await sleep(5000);
+
+                let imageContainer = $('.ts.slate .identifying');
+                imageContainer.classList.remove('identifying');
+                imageContainer.classList.add('identified');
+
+                description.innerHTML = `<strong>辨識完成</strong>`;
+                description.classList.remove('animated', 'flash', 'infinite');
+
+                await sleep(1000);
+                // navigate();
+            } catch (error) {
+                console.log(error);
+                if (error.response) {
+                    let data = JSON.parse(error.response.data);
+                    snackbar("Error occurred: " + data.state);
+                } else {
+                    snackbar("Error occurred: " + error.message);
+                }
+            }
+
+
+        }
+
+        $('#return').on('click', (e) => {
+            sessionStorage.removeItem("username");
+            sessionStorage.removeItem("next");
+
+            location.href = `index.html`;
+        });
+
+        async function sleep(ms) {
+            return new Promise((res, rej) => {
+                setTimeout(() => { res() }, ms);
+            });
+        }
+        // determine where to go next
+        function navigate() {
+            let next = sessionStorage.getItem("next");
+
+            switch (next) {
+                case "log":
+                    location.href = "log.html";
+                    break;
+                case "borrow":
+                default:
+                    location.href = "scan.html";
+            }
+        }
+
+        function snackbar(message) {
+            ts('.snackbar').snackbar({
+                content: message
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- Tocas UI：CSS 與元件 -->
+    <link rel="stylesheet" href="assets/tocas.css">
+    <!-- Tocas JS：模塊與 JavaScript 函式 -->
+    <script src="assets/tocas.js"></script>
+    <link rel="stylesheet" href="assets/animate.css">
+    <title>Self-service Library</title>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div class="ts padded fluid slate">
+        <i class="book symbol icon"></i>
+        <span class="header">歡迎實用自助借書服務</span>
+        <span class="description"></span>
+    </div>
+    
+    <!-- Anchor -->
+    <div class="ts snackbar">
+        <div class="content"></div>
+    </div>
+    <script src="assets/axios.min.js"></script>
+    <script>
+        HTMLElement.prototype.on = function(eventName, callback) {
+            this.addEventListener(eventName, callback);
+        }
+
+        var $ = (selector) => { return document.querySelector(selector); }
+        var $$ = (selector) => { return document.querySelectorAll(selector); }
+
+        function snackbar(message) {
+            ts('.snackbar').snackbar({
+                content: message
+            });
+        }
+    </script>
+</body>
+</html>
