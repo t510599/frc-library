@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- Tocas UI：CSS 與元件 -->
+    <link rel="stylesheet" href="assets/tocas.css">
+    <!-- Tocas JS：模塊與 JavaScript 函式 -->
+    <script src="assets/tocas.js"></script>
+    <link rel="stylesheet" href="assets/animate.css">
+    <title>Self-service Library</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #main {
+            flex: 1;
+            flex-grow: 1;
+            padding: 2em 0;
+            width: 100vw;
+            overflow: hidden;
+        }
+        #tableWrapper {
+            height: 100%;
+            overflow: auto;
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="ts big fluid basic borderless menu">
+        <div class="ts narrow container">
+            <div class="item" id="username">讀者，您好！</div>
+            <a id="logout" href="javascript:void(0);" class="right item">登出</a>
+        </div>
+    </div>
+
+    <div class="ts narrow container" id="main">
+        <div class="ts fitted segment" id="tableWrapper">
+            <table class="ts borderless striped selectable table">
+                <thead>
+                    <tr>
+                        <th>書名</th>
+                        <th>借閱日期</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="2">沒有借閱中的書籍！</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+    <!-- Anchor -->
+    <div class="ts snackbar">
+        <div class="content"></div>
+    </div>
+    <script src="assets/axios.min.js"></script>
+    <script>
+        HTMLElement.prototype.on = function(eventName, callback) {
+            this.addEventListener(eventName, callback);
+        }
+
+        var $ = (selector) => { return document.querySelector(selector); }
+        var $$ = (selector) => { return document.querySelectorAll(selector); }
+
+        if (sessionStorage.getItem("username")) {
+            $('#username').textContent = `讀者 ${sessionStorage.getItem("username")}，您好！`;
+        }
+
+        $('#logout').on('click', async () => {
+            try {
+                let res = await axios.get('/api/logout');
+
+                location.href = `index.html`;
+            } catch (error) {
+                console.log(error);
+                snackbar(`Error occured: ` + error.message);
+            }
+        });
+
+        // fetch user log
+        (async () => {
+            try {
+                let res = await axios.request({
+                    url: '/api/user',
+                    method: 'GET'
+                });
+            } catch (error) {
+                console.log(error);
+                if (error.response) {
+                    let data = JSON.parse(error.repsonse.data);
+                    snackbar(`Error occured: ` + data.state);
+                } else {
+                    snackbar(`Error occured: ` + error.message);
+                }
+
+                return false;
+            }
+
+            let data = JSON.parse(res.data);
+            if (data.books.length) {
+                $('tbody').innerHTML = "";
+                data.books.forEach((e, _i) => {
+                    $('tbody').insertAdjacentHTML('beforeend', `<tr><td>${e.name}</td><td>${e.time}</td></tr>`);
+                });
+            }
+        })();
+
+        function snackbar(message) {
+            ts('.snackbar').snackbar({
+                content: message
+            });
+        }
+    </script>
+</body>
+</html>
