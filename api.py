@@ -17,18 +17,14 @@ def train(file_stream):
 #input: an image that contains exactly one face
 #input: a dictionary represent the encodings we knew
 #output: a tuple with format (top, right, bottom, left, name)
-def identify(image, known_dict):
+def identify(image, known_encoding):
+	if known_encoding is None:
+		return False
 	locations = face_locations(image)
 	if not locations:
 		raise NoFaceDetectedError()
 	unknown_encoding = face_encodings(image, locations)[0]
 	pos = (locations[0][0], locations[0][1], locations[0][2], locations[0][3])
-	distances = face_distance(list(known_dict.values()), unknown_encoding)
-	if distances.size == 0:
-		return (pos, "unknown")
-	index = argmin(distances)
-	if distances[index] <= 0.4:
-		return (pos, list(known_dict.keys())[index])
-	else:
-		return (pos, "unknown")
+	distance = face_distance([known_encoding], unknown_encoding)[0]
+	return distance <= 0.4
 

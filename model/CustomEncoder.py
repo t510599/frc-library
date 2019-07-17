@@ -1,6 +1,6 @@
 from flask.json import JSONEncoder
-import Book
-import User
+from . import Book
+from . import User
 class CustomEncoder(JSONEncoder):
 	def default(self, obj):
 		if isinstance(obj, User):
