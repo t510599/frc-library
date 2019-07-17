@@ -1,13 +1,14 @@
 from flask import *
-import cv2
 import api
+import db
+import cv2
+from model.CustomEncoder import CustomEncoder
 import pickle
 import os.path as path
 
-ft = cv2.freetype.createFreeType2()
-ft.loadFontData("./edukai-3.ttf", 0)
-
 app = Flask(__name__, static_folder='assets')
+#host, user, password
+database = db.LibraryDb('localhost', 'root', '')
 app.config['JSON_AS_ASCII'] = False
 app.config['UPLOAD_FOLDER'] = "./upload"
 
@@ -28,20 +29,8 @@ class VideoCamera(object):
     def get_frame(self):
         _success, image = self.video.read()
         return image
-
-def mark_face(image, name, pos):
-    top, right, bottom, left = pos
-    # mark face
-    cv2.rectangle(image, (left, bottom), (right, top), (255, 0, 0), 2, cv2.LINE_AA)
-    # name block
-    cv2.rectangle(image, (left, bottom), (right, bottom + 30), (255, 0, 0), -1)
-
-    # put name
-    ft.putText(image, name, (left + 5, bottom + 5 + 20), 20, (255, 255, 255), -1, cv2.LINE_AA, True)
-
-    return (name, pos)
     
-def gen(camera):
+def gen(camera, encoding):
     while True:
         frame = camera.get_frame()
         if frame is None:
@@ -49,38 +38,78 @@ def gen(camera):
             continue
         frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         try:
-            pos, name = api.identify(frame, encodings)
-            mark_face(frame, name, pos)
+            result = api.identify(frame, encoding)
+            # print(result)
         except api.NoFaceDetectedError:
             pass
+        frame = cv2.resize(frame, (0, 0), fx=2, fy=2)
+        height = frame.shape[0]
+        width = frame.shape[1]
+        small = min(height, width)
+        if height != width:
+            if small == height:
+                should_cut = (width - small)//2
+                frame = frame[:, should_cut:(width-should_cut), :]
+            else:
+                should_cut = (height - small)//2
+                frame = frame[should_cut:height-should_cut, :, :]
         ret, jpeg = cv2.imencode('.jpg', frame)
+        print(frame.shape)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
 #page provider
 @app.route('/')
+@app.route('/index.html')
 def index():
     with open('templates/index.html', 'r') as f:
         return f.read()
 
-@app.route('/register')
+@app.route('/register.html')
 def register():
     with open('templates/register.html', 'r') as f:
         return f.read()
 
-@app.route('/barcode')
-def barcode():
-    with open('templates/barcode.html', 'r') as f:
+@app.route('/scan.html')
+def scan():
+    with open('templates/scan.html', 'r') as f:
         return f.read()
 
-@app.route('/user')
-def user():
-    with open('templates/user.html', 'r') as f:
+@app.route('/log.html')
+def log():
+    with open('templates/log.html', 'r') as f:
+        return f.read()
+@app.route('/login.html')
+def login():
+    with open('templates/login.html', 'r') as f:
         return f.read()
 
+#apis
+@app.route('/api/book/info')
+def book_info():
+    json = request.get_json()
+    book_id = json['id']
+    book = database.query_book(book_id)
+    if book != None:
+        return jsonify(book)
+    else:
+        content = {
+            'error': 'cannot find the book'
+        }
+        return jsonify(content)
 
-@app.route('/api/train', methods=['PUT'])
-def train():
+@app.route('/api/return')
+def return_book():
+    json = request.get_json()
+    book_ids = json['id']
+    result = database.return_book()
+    content = {
+        'status': result
+    }
+    return jsonify(content)
+
+@app.route('/api/register', methods=['PUT'])
+def api_register():
     if not request.files:
         return jsonify({'status': 'failed', 'error': 'no_file'}), 400
     if not 'name' in request.form:
@@ -99,16 +128,12 @@ def train():
 
 @app.route('/api/identify')
 def identify():
-    return Response(gen(VideoCamera()), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen(VideoCamera(), None), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/api/logout')
+def logout():
+    return jsonify({'status': 'succeed'}), 200
 
 if __name__ == '__main__':
-    encodings = dict()
-    try:
-        with open('encodings.pickle', 'rb') as f:
-            encodings = pickle.load(f)
-    except:
-        #file not found
-        #skip it
-        pass
-    # make sure singleton
+    app.json_encoder = CustomEncoder
     app.run(host='0.0.0.0', threaded=True)
