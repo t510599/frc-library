@@ -31,33 +31,44 @@
             margin: auto;
         }
 
-        .identifying::before {
-            animation-name: hue;
-            animation-duration: 3s;
-            animation-iteration-count: infinite;
+        .imageContainer > .placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background-color: slategrey;
+        }
+
+        .imageContainer > .placeholder > i.icon {
+            color: white;
+        }
+
+        .imageContainer::before {
             content: '';
             display: block;
             border-radius: 50%;
             position: absolute;
-            top: -10px;
-            right: -10px;
-            bottom: -10px;
-            left: -10px;
+            top: -10px; right: -10px; bottom: -10px; left: -10px;
+        }
+
+        .identifying::before {
+            animation-name: hue;
+            animation-duration: 2s;
+            animation-iteration-count: infinite;
             background-image: linear-gradient(90deg, #f35626 0%,#feab3a 100%);
             transition: background-image 0.5s;
         }
 
         .identified::before {
-            content: '';
-            display: block;
-            border-radius: 50%;
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            bottom: -10px;
-            left: -10px;
             transition: background-color 0.5s ease-out;
             background-color: hsl(97, 100%, 50%);
+        }
+
+        .not.identified::before {
+            background-color: hsl(14, 100%, 50%);
         }
 
         .animated.infinite {
@@ -78,15 +89,17 @@
 <body>
     <div class="wrapper">
         <div class="ts center aligned narrow container" style="width: 100vw;">
-            <div class="ts big center aligned slate">
+            <div class="ts large center aligned slate">
                 <i class="user icon"></i>
                 <span class="header">登入</span>
-                <span class="description"></span>
+                <span class="animated infinite flash description">辨識中</span>
                 <div class="action">
-                    <div class="ts input">
-                        <input type="text" placeholder="讀者帳號">
+                    <div class="identifying imageContainer">
+                        <div class="placeholder">
+                            <i class="massive photo icon"></i>
+                        </div>
+                        <img class="ts medium circular image" src="/api/identify">
                     </div>
-                    <button class="ts primary button" id="submit">送出</button>
                 </div>
             </div>
             <div class="ts divider"></div>
@@ -106,80 +119,63 @@
         var $ = (selector) => { return document.querySelector(selector); }
         var $$ = (selector) => { return document.querySelectorAll(selector); }
 
-        $('#submit').on('click', async () => {
-            let username = $('.ts.slate input').value
-            try {
-                /*let res = await axios.request({
-                    url: '/api/login',
-                    method: "POST",
-                    data: {
-                        "username": username
-                    }
-                });*/
-
-                sessionStorage.setItem("username", username);
-                enableStream();
-            } catch (error) {
-                console.log(error);
-                if (error.response) {
-                    let data = JSON.parse(error.response.data);
-                    snackbar("Error occurred: " + data.state);
-                } else {
-                    snackbar("Error occurred: " + error.message);
-                }
-
-                return false;
-            }
-        });
-
-        async function enableStream() {
-            // camera is controlled by the backend, so we just get stream from server
-            $('.ts.slate > .action').innerHTML = `<div class="identifying imageContainer">
-                <img class="ts medium circular image" src="/api/identify">
-            </div>`;
-
-            let description = $('.ts.slate span.description');
-            description.textContent = `辨識中`;
-            description.classList.add('animated', 'flash', 'infinite');
-
-            // long polling until server identified user
-            try {
-                /*let res = await axios.request({
-                    url: `/get_state`,
-                    method: `GET`
-                });*/
-
-
-                await sleep(5000);
-
-                let imageContainer = $('.ts.slate .identifying');
-                imageContainer.classList.remove('identifying');
-                imageContainer.classList.add('identified');
-
-                description.innerHTML = `<strong>辨識完成</strong>`;
-                description.classList.remove('animated', 'flash', 'infinite');
-
-                await sleep(1000);
-                // navigate();
-            } catch (error) {
-                console.log(error);
-                if (error.response) {
-                    let data = JSON.parse(error.response.data);
-                    snackbar("Error occurred: " + data.state);
-                } else {
-                    snackbar("Error occurred: " + error.message);
-                }
-            }
-
-
-        }
-
         $('#return').on('click', (e) => {
             sessionStorage.removeItem("username");
             sessionStorage.removeItem("next");
 
             location.href = `index.html`;
         });
+
+        async function enableStream() {
+            let description = $('.ts.slate span.description');
+            let imageContainer = $('.ts.slate .identifying');
+
+            // long polling until server identified user
+            try {
+                // await sleep(10000);
+                let res = await axios.request({
+                    url: `/get_state`,
+                    method: `GET`
+                });
+                
+                let data = JSON.parse(res.data);
+                /*let data = {
+                    state: true,
+                    username: 'hi'
+                }*/
+
+                if (data.state) {
+                    // sessionStorage.setItem("username") = data.username;
+
+                    imageContainer.classList.remove('identifying');
+                    imageContainer.classList.add('identified');
+
+                    description.innerHTML = `<strong>辨識完成</strong>`;
+                    description.classList.remove('animated', 'flash', 'infinite');
+
+                    await sleep(1000);
+                    // navigate();
+                } else {
+                    imageContainer.classList.remove('identifying');
+                    imageContainer.classList.add('not', 'identified');
+
+                    description.innerHTML = `<strong>辨識失敗，請再登入一次</strong>`;
+                    description.classList.remove('animated', 'flash', 'infinite');
+
+                    await sleep(1000);
+                    location.href = 'index.html';
+                }
+            } catch (error) {
+                console.log(error);
+                if (error.response) {
+                    let data = JSON.parse(error.response.data);
+                    snackbar("Error occurred: " + data.state);
+                } else {
+                    snackbar("Error occurred: " + error.message);
+                }
+            }
+        }
+        enableStream();
 
         async function sleep(ms) {
             return new Promise((res, rej) => {
