@@ -135,7 +135,7 @@
         async function enableStream() {
             // camera is controlled by the backend, so we just get stream from server
             $('.ts.slate > .action').innerHTML = `<div class="identifying imageContainer">
-                <img class="ts medium circular image" src="a.jpg">
+                <img class="ts medium circular image" src="/api/identify">
             </div>`;
 
             let description = $('.ts.slate span.description');

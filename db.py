@@ -103,7 +103,7 @@ class LibraryDb:
         db.close()
         return True
 
-    def returnBook(self, book_ids):
+    def return_book(self, book_ids):
         lent_command = 'UPDATE `frc_library``books` SET `lent` = 0 WHERE `book_id` = %s'
         borrower_command = 'UPDATE `frc_library`.`books` SET `borrower_id` = NULL WHERE `book_id` = %s'
         time_command = 'UPDATE `frc_library`.`books` SET `time` = NULL WHERE `book_id` = %s'
