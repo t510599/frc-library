@@ -77,7 +77,7 @@
         }
 
         // each time we return to index page, we should logout the last user's account
-        axios.get('/api/logout');
+        axios.get('./api/logout');
         sessionStorage.removeItem("username");
 
         $('#borrow').on('click', (e) => {

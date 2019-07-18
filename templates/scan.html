@@ -136,7 +136,7 @@
 
             try {
                 let res = await axios.request({
-                    url: `/api/book/info/`,
+                    url: `./api/book/info/`,
                     method: "POST",
                     data: {
                         "id": code
@@ -163,9 +163,9 @@
         $('#finish').on('click', async (e) => {
             let next = sessionStorage.getItem("next");
             if (next == "borrow") {
-                var url = "/api/borrow"
+                var url = "./api/borrow"
             } else if (next == "return") {
-                var url = "/api/return"
+                var url = "./api/return"
             }
 
             try {
@@ -192,19 +192,6 @@
         });
 
         $('#scan').focus();
-
-        function virtualDB(code) {
-            let db = {
-                "77611-07": "生物",
-                "9789866298806": "地科",
-                "9789862243558": "國文"
-            }
-
-            return {
-                code: code,
-                name: db[code]
-            }
-        }
 
         function appendBook(title, code) {
             let tbody = $('table tbody');

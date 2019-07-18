@@ -101,7 +101,7 @@
                         <div class="placeholder">
                             <i class="massive photo icon"></i>
                         </div>
-                        <img class="ts medium circular image" src="/api/identify">
+                        <img class="ts medium circular image" src="./api/identify">
                     </div>
                 </div>
             </div>
@@ -138,7 +138,8 @@
             // long polling until server identified user
             try {
                 let res = await axios.request({
-                    url: `/get_state`,
+                    url: `./get_state`,
+                    timeout: 30000,
                     method: `GET`
                 });
                 
@@ -168,7 +169,7 @@
             } catch (error) {
                 console.log(error);
                 if (error.response) {
-                    let data = JSON.parse(error.response.data);
+                    let data = error.response.data;
                     snackbar("Error occurred: " + data.state);
                 } else {
                     snackbar("Error occurred: " + error.message);
