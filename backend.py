@@ -60,26 +60,26 @@ def gen(camera, encoding):
 
 #page provider
 @app.route('/')
-@app.route('/index.html')
+@app.route('/index')
 def index():
     with open('templates/index.html', 'r') as f:
         return f.read()
 
-@app.route('/register.html')
+@app.route('/register')
 def register():
     with open('templates/register.html', 'r') as f:
         return f.read()
 
-@app.route('/scan.html')
+@app.route('/scan')
 def scan():
     with open('templates/scan.html', 'r') as f:
         return f.read()
 
-@app.route('/log.html')
+@app.route('/log')
 def log():
     with open('templates/log.html', 'r') as f:
         return f.read()
-@app.route('/login.html')
+@app.route('/login')
 def login():
     with open('templates/login.html', 'r') as f:
         return f.read()
