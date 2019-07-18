@@ -5,6 +5,7 @@ import cv2
 from model.CustomEncoder import CustomEncoder
 import pickle
 import os.path as path
+from timeit import default_timer as timer
 
 app = Flask(__name__, static_folder='assets')
 #host, user, password
@@ -39,7 +40,9 @@ def gen(camera, encoding):
         frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         try:
             result = api.identify(frame, encoding)
-            # print(result)
+            if result:
+                identified_username = result
+                identify_result = True
         except api.NoFaceDetectedError:
             pass
         frame = cv2.resize(frame, (0, 0), fx=2, fy=2)
@@ -54,9 +57,9 @@ def gen(camera, encoding):
                 should_cut = (height - small)//2
                 frame = frame[should_cut:height-should_cut, :, :]
         ret, jpeg = cv2.imencode('.jpg', frame)
-        print(frame.shape)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
+
 
 #page provider
 @app.route('/')
@@ -121,6 +124,7 @@ def api_register():
         encoding = api.train(file)
     except api.NoFaceDetectedError:
         pass
+
     encodings[name] = encoding
     with open('encodings.pickle', 'wb') as f:
         pickle.dump(encodings, f)
@@ -128,12 +132,31 @@ def api_register():
 
 @app.route('/api/identify')
 def identify():
-    return Response(gen(VideoCamera(), None), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen(VideoCamera(), encodings), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/get_state')
+def get_state():
+    while not identify_result:
+        pass
+    return jsonify({'status': 'succeed',
+                    'username': identified_username,
+                    'avatar_path': path.join(app.config['UPLOAD_FOLDER'], identified_username+".png")})
 
 @app.route('/api/logout')
 def logout():
+    identify_result = False
+    identified_username = None
     return jsonify({'status': 'succeed'}), 200
 
 if __name__ == '__main__':
+    encodings = dict()
+    identified_username = None
+    identify_result = False
+    try:
+        with open('encodings.pickle', 'rb') as f:
+            encodings = pickle.load(f)
+    except:
+        #file not found
+        pass
     app.json_encoder = CustomEncoder
     app.run(host='0.0.0.0', threaded=True)
