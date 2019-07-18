@@ -54,7 +54,6 @@ def gen(camera, encoding):
                 should_cut = (height - small)//2
                 frame = frame[should_cut:height-should_cut, :, :]
         ret, jpeg = cv2.imencode('.jpg', frame)
-        print(frame.shape)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 

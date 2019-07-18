@@ -191,13 +191,13 @@
 
         var camera = new Camera($('video'), $('canvas'));
 
-        $('#username > #check').on('click', (e) => {
+        $('#username > #check').on('click', async (e) => {
             let username = $('#username input').value;
-            if (!checkDuplicatedUsername(username)) {
-                $('#username input').classList.add('error');
+            if (!await checkDuplicatedUsername(username)) {
+                $('#username .ts.input').classList.add('error');
                 snackbar('帳號無法使用!');
             } else {
-                $('#username input').classList.remove('error');
+                $('#username .ts.input').classList.remove('error');
                 displayPhotoDialog();
             }
         });
@@ -226,7 +226,7 @@
                     return form
                 }).then((form) => {
                     axios.request({
-                        url: "/api/register",
+                        url: "./api/register",
                         method: "POST",
                         data: form
                     }).then((res) => {
@@ -258,7 +258,7 @@
             }
             try {
                 let res = await axios.request({
-                    url: "/api/check",
+                    url: "./api/check",
                     method: "POST",
                     data: {
                         "username": username
