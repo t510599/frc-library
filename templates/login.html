@@ -9,6 +9,7 @@
     <!-- Tocas JS：模塊與 JavaScript 函式 -->
     <script src="assets/tocas.js"></script>
     <link rel="stylesheet" href="assets/animate.css">
+    <script src="assets/sweetalert2.js"></script>
     <title>Self-service Library</title>
     <style>
         strong {
@@ -24,7 +25,7 @@
         }
 
         div.imageContainer {
-            position: relative !important;
+            position: relative;
             box-sizing: content-box;
             width: 300px;
             height: 300px;
@@ -44,6 +45,8 @@
 
         .imageContainer > .placeholder > i.icon {
             color: white;
+            padding: 0;
+            margin: 0;
         }
 
         .imageContainer::before {
@@ -112,6 +115,8 @@
     </div>
     <script src="assets/axios.min.js"></script>
     <script>
+        axios.defaults.withCredentials = true;
+
         HTMLElement.prototype.on = function(eventName, callback) {
             this.addEventListener(eventName, callback);
         }
@@ -123,7 +128,7 @@
             sessionStorage.removeItem("username");
             sessionStorage.removeItem("next");
 
-            location.href = `index.html`;
+            location.href = `./index`;
         });
 
         async function enableStream() {
@@ -132,20 +137,15 @@
 
             // long polling until server identified user
             try {
-                // await sleep(10000);
                 let res = await axios.request({
                     url: `/get_state`,
                     method: `GET`
                 });
                 
-                let data = JSON.parse(res.data);
-                /*let data = {
-                    state: true,
-                    username: 'hi'
-                }*/
+                let data = res.data;
 
                 if (data.state) {
-                    // sessionStorage.setItem("username") = data.username;
+                    sessionStorage.setItem("username") = data.username;
 
                     imageContainer.classList.remove('identifying');
                     imageContainer.classList.add('identified');
@@ -153,8 +153,8 @@
                     description.innerHTML = `<strong>辨識完成</strong>`;
                     description.classList.remove('animated', 'flash', 'infinite');
 
-                    await sleep(1000);
-                    // navigate();
+                    await sleep(500);
+                    ask(data.username, navigate);
                 } else {
                     imageContainer.classList.remove('identifying');
                     imageContainer.classList.add('not', 'identified');
@@ -163,7 +163,7 @@
                     description.classList.remove('animated', 'flash', 'infinite');
 
                     await sleep(1000);
-                    location.href = 'index.html';
+                    location.href = './index';
                 }
             } catch (error) {
                 console.log(error);
@@ -182,17 +182,37 @@
                 setTimeout(() => { res() }, ms);
             });
         }
+
+        function ask(username, callback) {
+            Swal.fire({
+                title: '確認',
+                text: `${username}，這是你的帳號嗎？`,
+                type: 'question',
+                allowOutsideClick: false,
+                showCancelButton: true,
+                confirmButtonText: '是',
+                cancelButtonText: '否',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.value) {
+                    callback();
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    location.href = "./index";
+                }
+            });
+        }
+
         // determine where to go next
         function navigate() {
             let next = sessionStorage.getItem("next");
 
             switch (next) {
                 case "log":
-                    location.href = "log.html";
+                    location.href = "./log";
                     break;
                 case "borrow":
                 default:
-                    location.href = "scan.html";
+                    location.href = "./scan";
             }
         }
 
