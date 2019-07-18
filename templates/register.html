@@ -25,10 +25,21 @@
             flex-direction: column;
         }
 
+        .video.container {
+            box-sizing: content-box;
+            height: 360px;
+            width: 480px;
+        }
+
+        .video.container.captured {
+            border: 0.3em solid rgb(30, 127, 203);
+        }
+
         .video.container > canvas {
             position: absolute;
             top: 0;
             left: 0;
+            bottom: 0;
         }
 
         .close.button {
@@ -79,11 +90,11 @@
                     <canvas width="480" height="360"></canvas>
                     <button class="ts close button"></button>
                 </div>
-
-                <button class="ts left floated basic button">回首頁</button>
+                <hr>
+                <a href="./index" class="ts left floated basic button">回首頁</a>
                 <div class="ts right floated separated buttons">
                     <button class="ts capture inverted button">拍照</button>
-                    <button class="ts submit primary button">送出</button>
+                    <button class="ts submit disabled primary button">送出</button>
                 </div>
             </div>
         </div>
@@ -96,6 +107,8 @@
     </div>
     <script src="assets/axios.min.js"></script>
     <script>
+        axios.defaults.withCredentials = true;
+
         HTMLElement.prototype.on = function(eventName, callback) {
             this.addEventListener(eventName, callback);
         }
@@ -120,7 +133,6 @@
             enable: function() {
                 if (!this.enabled) {
                     navigator.mediaDevices.getUserMedia({video: true, audio: false}).then((stream) => {
-                        console.log('e');
                         this.videoStream = stream;
 
                         if ('srcObject' in this.video) {
@@ -159,6 +171,7 @@
 
                 ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
                 this.captured = true;
+                this.video.parentElement.classList.toggle('captured', this.captured);
             },
             save: function() {
                 let canvas = this.canvas;
@@ -172,26 +185,96 @@
                 let ctx = this.canvas.getContext('2d');
                 ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 this.captured = false;
+                this.video.parentElement.classList.toggle('captured', this.captured);
             }
         }
 
         var camera = new Camera($('video'), $('canvas'));
 
         $('#username > #check').on('click', (e) => {
-            displayPhotoDialog();
+            let username = $('#username input').value;
+            if (!checkDuplicatedUsername(username)) {
+                $('#username input').classList.add('error');
+                snackbar('帳號無法使用!');
+            } else {
+                $('#username input').classList.remove('error');
+                displayPhotoDialog();
+            }
         });
 
         $('#photoContainer .capture.button').on('click', (e) => {
             let el = e.target;
             camera.capture();
             el.classList.toggle("disabled", true);
+            $('#photoContainer .submit.button').classList.toggle("disabled", false);
         });
 
         $('#photoContainer .close.button').on('click', (e) => {
             camera.clear();
             $('#photoContainer .capture.button').classList.toggle("disabled", false);
+            $('#photoContainer .submit.button').classList.toggle("disabled", true);
         });
 
+        $('#photoContainer .submit.button').on('click', (e) => {
+            if (!camera.captured) {
+                snackbar("尚未拍照！");
+            } else {
+                camera.save().then((blob) => {
+                    let form = new FormData();
+                    form.append("username", $("#username input").value);
+                    form.append("file", blob, "camera.png");
+                    return form
+                }).then((form) => {
+                    axios.request({
+                        url: "/api/register",
+                        method: "POST",
+                        data: form
+                    }).then((res) => {
+                        let data = res.data;
+                        if (data.state) {
+                            snackbar('註冊成功！即將跳轉回首頁');
+                            setTimeout(() => {location.href = "./index"}, 1500);
+                        } else {
+                            switch (res.data.message) {
+                                case "no_file":
+                                    snackbar('沒有檔案。');
+                                    break;
+                                case "no_name":
+                                    snackbar('沒有名字。');
+                                    break;
+                            }
+                        }
+                    }).catch((err) => {
+                        console.error(error);
+                        snackbar('Error occured: ' + error.message);
+                    });
+                });
+            }
+        });
+
+        async function checkDuplicatedUsername(username) {
+            if (username.trim() == "") {
+                return false;
+            }
+            try {
+                let res = await axios.request({
+                    url: "/api/check",
+                    method: "POST",
+                    data: {
+                        "username": username
+                    }
+                });
+                let data = res.data;
+                
+                return data.status
+            } catch (error) {
+                console.error(error);
+                snackbar('Error occured: ' + error.message);
+                return false;
+            }
+        }
+
+        /* dialog */
         function displayUsernameDialog() {
             $('#firstStep').classList.toggle("active", true);
             $('#firstStep').classList.toggle("completed", false);
