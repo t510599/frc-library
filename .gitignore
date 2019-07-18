@@ -1,1 +1,4 @@
 secret.txt
+__pycache__/*.pyc
+__pycache__/api.cpython-36.pyc
+*.pyc

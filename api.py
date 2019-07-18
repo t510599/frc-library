@@ -1,5 +1,6 @@
 from face_recognition import face_locations, face_encodings, face_distance, load_image_file
 from numpy import argmin
+import time
 class NoFaceDetectedError(Exception):
 	pass
 
@@ -14,17 +15,21 @@ def train(file_stream):
 	encodings = face_encodings(image, location)
 	return encodings[0]
 
+num = 100
 #input: an image that contains exactly one face
 #input: a dictionary represent the encodings we knew
 #output: a tuple with format (top, right, bottom, left, name)
-def identify(image, known_encoding):
-	if known_encoding is None:
-		return False
+def identify(image, known_dict):
 	locations = face_locations(image)
 	if not locations:
 		raise NoFaceDetectedError()
 	unknown_encoding = face_encodings(image, locations)[0]
-	pos = (locations[0][0], locations[0][1], locations[0][2], locations[0][3])
-	distance = face_distance([known_encoding], unknown_encoding)[0]
-	return distance <= 0.4
+	distances = face_distance(list(known_dict.values()), unknown_encoding)
+	if distances.size == 0:
+		return None
+	index = argmin(distances)
+	if distances[index] <= 0.4:
+		return list(known_dict.keys())[index]
+	else:
+		return None
 

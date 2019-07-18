@@ -144,13 +144,13 @@
 
             // long polling until server identified user
             try {
-                /*let res = await axios.request({
+                let res = await axios.request({
                     url: `/get_state`,
                     method: `GET`
-                });*/
+                });
 
 
-                await sleep(5000);
+                // await sleep(5000);
 
                 let imageContainer = $('.ts.slate .identifying');
                 imageContainer.classList.remove('identifying');
