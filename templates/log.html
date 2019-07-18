@@ -40,7 +40,7 @@
     <div class="ts big fluid basic borderless menu">
         <div class="ts narrow container">
             <div class="item" id="username">讀者，您好！</div>
-            <a id="logout" href="javascript:void(0);" class="right item">登出</a>
+            <a id="logout" href="./index" class="right item">登出</a>
         </div>
     </div>
 
@@ -60,7 +60,6 @@
                 </tbody>
             </table>
         </div>
-        
     </div>
     <!-- Anchor -->
     <div class="ts snackbar">
@@ -68,6 +67,8 @@
     </div>
     <script src="assets/axios.min.js"></script>
     <script>
+        axios.defaults.withCredentials = true;
+
         HTMLElement.prototype.on = function(eventName, callback) {
             this.addEventListener(eventName, callback);
         }
@@ -77,24 +78,15 @@
 
         if (sessionStorage.getItem("username")) {
             $('#username').textContent = `讀者 ${sessionStorage.getItem("username")}，您好！`;
+        } else {
+            location.href = "./index";
         }
-
-        $('#logout').on('click', async () => {
-            try {
-                let res = await axios.get('/api/logout');
-
-                location.href = `index.html`;
-            } catch (error) {
-                console.log(error);
-                snackbar(`Error occured: ` + error.message);
-            }
-        });
 
         // fetch user log
         (async () => {
             try {
                 let res = await axios.request({
-                    url: '/api/user',
+                    url: './api/user',
                     method: 'GET'
                 });
             } catch (error) {
@@ -109,7 +101,7 @@
                 return false;
             }
 
-            let data = JSON.parse(res.data);
+            let data = res.data;
             if (data.books.length) {
                 $('tbody').innerHTML = "";
                 data.books.forEach((e, _i) => {

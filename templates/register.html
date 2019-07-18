@@ -11,15 +11,95 @@
     <link rel="stylesheet" href="assets/animate.css">
     <title>Self-service Library</title>
     <style>
+        body {
+            margin: 0;
+            width: 100vw;
+            height: 100vh;
+        }
 
+        .ts.container#main {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .video.container {
+            box-sizing: content-box;
+            height: 360px;
+            width: 480px;
+        }
+
+        .video.container.captured {
+            border: 0.3em solid rgb(30, 127, 203);
+        }
+
+        .video.container > canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+        }
+
+        .close.button {
+            position: absolute;
+            z-index: 3;
+            right: 1.5em;
+            top: 1em;
+        }
+
+        .display-none {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-    <div class="ts padded fluid slate">
-        <i class="book symbol icon"></i>
-        <span class="header">歡迎實用自助借書服務</span>
-        <span class="description"></span>
+    <div class="ts fluid center aligned container" id="main">
+        <div class="ts steps">
+            <a class="active step" href="javascript:void(0)" id="firstStep">
+                <i class="user icon"></i>
+                <div class="content">
+                    <div class="title">讀者帳號</div>
+                    <div class="description">輸入你的讀者帳號</div>
+                </div>
+            </a>
+            <a class="step" href="javascript:void(0)" id="secondStep">
+                <i class="photo icon"></i>
+                <div class="content">
+                    <div class="title">拍照</div>
+                    <div class="description">拍張照片，以提供臉部辨識</div>
+                </div>
+            </a>
+        </div>
+    
+        <div class="animated fadeIn ts tertiary segment" id="username">
+            <p>請輸入讀者帳號</p>
+            <div class="ts input">
+                <input id="input" type="text" placeholder="帳號">
+            </div>
+            <br><br>
+            <button id="check" class="ts positive button">送出</button>
+        </div>
+
+        <div class="display-none animated fadeIn ts tertiary segment" id="photoContainer">
+            <div class="ts narrow container">
+                <div class="ts header">相機</div>
+                <div class="video container">
+                    <video autoplay="" width="480" height="360"></video>
+                    <canvas width="480" height="360"></canvas>
+                    <button class="ts close button"></button>
+                </div>
+                <hr>
+                <a href="./index" class="ts left floated basic button">回首頁</a>
+                <div class="ts right floated separated buttons">
+                    <button class="ts capture inverted button">拍照</button>
+                    <button class="ts submit disabled primary button">送出</button>
+                </div>
+            </div>
+        </div>
     </div>
+
     
     <!-- Anchor -->
     <div class="ts snackbar">
@@ -27,12 +107,199 @@
     </div>
     <script src="assets/axios.min.js"></script>
     <script>
+        axios.defaults.withCredentials = true;
+
         HTMLElement.prototype.on = function(eventName, callback) {
             this.addEventListener(eventName, callback);
         }
 
+        HTMLElement.prototype.off = function(eventName, callback) {
+            this.removeEventListener("click", callback);
+        }
+
         var $ = (selector) => { return document.querySelector(selector); }
         var $$ = (selector) => { return document.querySelectorAll(selector); }
+
+        function Camera(video, canvas) {
+            this.enabled = false;
+            this.captured = false;
+
+            this.videoStream = null;
+            this.video = video;
+            this.canvas = canvas;
+        }
+
+        Camera.prototype = {
+            enable: function() {
+                if (!this.enabled) {
+                    navigator.mediaDevices.getUserMedia({video: true, audio: false}).then((stream) => {
+                        this.videoStream = stream;
+
+                        if ('srcObject' in this.video) {
+                            this.video.srcObject = stream;
+                        } else {
+                            this.video.src = window.URL.createObjectURL(stream);
+                        }
+
+                    }).catch((err) => {
+                        console.error(err);
+                        snackbar('Error occurred: ' + err.message);
+                    });
+
+                    this.enabled = true;
+                }
+            }, 
+            disable: function() {
+                if (this.enabled && this.videoStream) {
+                    let tracks = this.videoStream.getTracks();
+
+                    tracks.forEach((t, _i) => {
+                        t.stop();
+                    });
+
+                    this.video.srcObject = null;
+                    this.enabled = false;
+                }
+            },
+            capture: function() {
+                if (!this.enabled) {
+                    snackbar('相機未開啟！');
+                    return false;
+                }
+
+                let ctx = this.canvas.getContext('2d');
+
+                ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                this.captured = true;
+                this.video.parentElement.classList.toggle('captured', this.captured);
+            },
+            save: function() {
+                let canvas = this.canvas;
+                return new Promise((resolve, reject) => {
+                    canvas.toBlob((blob) => {
+                        resolve(blob);
+                    });
+                });
+            },
+            clear: function() {
+                let ctx = this.canvas.getContext('2d');
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.captured = false;
+                this.video.parentElement.classList.toggle('captured', this.captured);
+            }
+        }
+
+        var camera = new Camera($('video'), $('canvas'));
+
+        $('#username > #check').on('click', async (e) => {
+            let username = $('#username input').value;
+            if (!await checkDuplicatedUsername(username)) {
+                $('#username .ts.input').classList.add('error');
+                snackbar('帳號無法使用!');
+            } else {
+                $('#username .ts.input').classList.remove('error');
+                displayPhotoDialog();
+            }
+        });
+
+        $('#photoContainer .capture.button').on('click', (e) => {
+            let el = e.target;
+            camera.capture();
+            el.classList.toggle("disabled", true);
+            $('#photoContainer .submit.button').classList.toggle("disabled", false);
+        });
+
+        $('#photoContainer .close.button').on('click', (e) => {
+            camera.clear();
+            $('#photoContainer .capture.button').classList.toggle("disabled", false);
+            $('#photoContainer .submit.button').classList.toggle("disabled", true);
+        });
+
+        $('#photoContainer .submit.button').on('click', (e) => {
+            if (!camera.captured) {
+                snackbar("尚未拍照！");
+            } else {
+                camera.save().then((blob) => {
+                    let form = new FormData();
+                    form.append("username", $("#username input").value);
+                    form.append("file", blob, "camera.png");
+                    return form
+                }).then((form) => {
+                    axios.request({
+                        url: "./api/register",
+                        method: "POST",
+                        data: form
+                    }).then((res) => {
+                        let data = res.data;
+                        if (data.state) {
+                            snackbar('註冊成功！即將跳轉回首頁');
+                            setTimeout(() => {location.href = "./index"}, 1500);
+                        } else {
+                            switch (res.data.message) {
+                                case "no_file":
+                                    snackbar('沒有檔案。');
+                                    break;
+                                case "no_name":
+                                    snackbar('沒有名字。');
+                                    break;
+                            }
+                        }
+                    }).catch((err) => {
+                        console.error(error);
+                        snackbar('Error occured: ' + error.message);
+                    });
+                });
+            }
+        });
+
+        async function checkDuplicatedUsername(username) {
+            if (username.trim() == "") {
+                return false;
+            }
+            try {
+                let res = await axios.request({
+                    url: "./api/check",
+                    method: "POST",
+                    data: {
+                        "username": username
+                    }
+                });
+                let data = res.data;
+                
+                return data.status
+            } catch (error) {
+                console.error(error);
+                snackbar('Error occured: ' + error.message);
+                return false;
+            }
+        }
+
+        /* dialog */
+        function displayUsernameDialog() {
+            $('#firstStep').classList.toggle("active", true);
+            $('#firstStep').classList.toggle("completed", false);
+            $('#firstStep').off('click', displayUsernameDialog);
+
+            $('#secondStep').classList.toggle("active", false);
+
+            $('#username').classList.toggle('display-none', false);
+            $('#photoContainer').classList.toggle('display-none', true);
+
+            camera.disable();
+        }
+
+        function displayPhotoDialog() {
+            $('#firstStep').classList.toggle("active", false);
+            $('#firstStep').classList.toggle("completed", true);
+            $('#firstStep').on('click', displayUsernameDialog);
+
+            $('#secondStep').classList.toggle("active", true);
+
+            $('#username').classList.toggle('display-none', true);
+            $('#photoContainer').classList.toggle('display-none', false);
+
+            camera.enable();
+        }
 
         function snackbar(message) {
             ts('.snackbar').snackbar({
