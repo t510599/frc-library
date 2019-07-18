@@ -26,7 +26,7 @@
     </div>
     <div class="ts center aligned container" id="main">
         <div class="ts two cards">
-            <a class="ts positive card" href="scan.html" id="borrow">
+            <a class="ts positive card" href="./borrow" id="borrow">
                 <div class="center aligned very padded content">
                     <div class="header">借書</div>
                 </div>
@@ -34,7 +34,7 @@
                     <i class="share icon"></i>
                 </div>
             </a>
-            <a class="ts negative card" href="scan.html" id="return">
+            <a class="ts negative card" href="./scan" id="return">
                 <div class="center aligned very padded content">
                     <div class="header">還書</div>
                 </div>
@@ -44,7 +44,7 @@
             </a>
 
         </div>
-        <a class="ts card" href="log.html" id="log">
+        <a class="ts card" href="./log" id="log">
             <div class="secondary extra center aligned very padded content">
                 <div class="header">借閱紀錄</div>
             </div>
@@ -52,7 +52,7 @@
                 <i class="file text icon"></i>
             </div>
         </a>
-        <a href="register.html">申請讀者帳號</a>
+        <a href="./register">申請讀者帳號</a>
     </div>
     
     <!-- Anchor -->
@@ -61,6 +61,8 @@
     </div>
     <script src="assets/axios.min.js"></script>
     <script>
+        axios.defaults.withCredentials = true;
+
         HTMLElement.prototype.on = function(eventName, callback) {
             this.addEventListener(eventName, callback);
         }
@@ -74,13 +76,17 @@
             });
         }
 
+        // each time we return to index page, we should logout the last user's account
+        axios.get('./api/logout');
+        sessionStorage.removeItem("username");
+
         $('#borrow').on('click', (e) => {
             let el = e.currentTarget;
 
             e.preventDefault();
             sessionStorage.setItem('next', 'borrow');
 
-            location.href = 'login.html';
+            location.href = './login';
         });
 
         $('#return').on('click', (e) => {
@@ -98,7 +104,7 @@
             e.preventDefault();
             sessionStorage.setItem('next', 'log');
 
-            location.href = el.href;
+            location.href = './login';
         });
     </script>
 </body>

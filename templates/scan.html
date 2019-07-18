@@ -11,28 +11,198 @@
     <link rel="stylesheet" href="assets/animate.css">
     <title>Self-service Library</title>
     <style>
-
+        body {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #main {
+            flex: 1;
+            flex-grow: 1;
+            padding: 2em 0;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #tableWrapper {
+            flex: 1;
+            flex-grow: 1;
+            height: 100%;
+            overflow: auto;
+            margin: 0;
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        #action > .button {
+            display: inline-block;
+            margin-right: .5em;
+        }
+        #action > .button:last-child {
+            margin-right: 0;
+            margin-left: .5em;
+        }
     </style>
 </head>
 <body>
-    <div class="ts padded fluid slate">
-        <i class="book symbol icon"></i>
-        <span class="header">歡迎實用自助借書服務</span>
-        <span class="description"></span>
+    <div class="ts narrow container" id="main">
+        <div class="ts header" id="title"></div>
+        <div class="ts fitted segment" id="tableWrapper">
+            <table class="ts fixed borderless striped selectable table">
+                <thead>
+                    <tr>
+                        <th>書名</th>
+                        <th>條碼號</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <p>掃描完成後，記得按下完成才會完成借還書！</p>
     </div>
     
+    <div class="ts narrow container">
+        <div class="ts top attached segment" id="action">
+            <a class="ts left floated basic button" id="home" href="./index">回首頁</a>
+            <div class="ts input">
+                <input type="text" placeholder="掃描書背條碼" id="scan">
+            </div>
+            <button class="ts right floated positive inverted button" id="finish">完成</button>
+        </div>
+    </div>
     <!-- Anchor -->
     <div class="ts snackbar">
         <div class="content"></div>
     </div>
     <script src="assets/axios.min.js"></script>
     <script>
+        axios.defaults.withCredentials = true;
+
         HTMLElement.prototype.on = function(eventName, callback) {
             this.addEventListener(eventName, callback);
         }
 
         var $ = (selector) => { return document.querySelector(selector); }
         var $$ = (selector) => { return document.querySelectorAll(selector); }
+
+        var bookList = [];
+        let title =  {
+            "borrow": "借書",
+            "return": "還書"
+        }
+
+        $('#title').textContent = title[sessionStorage.getItem("next")];
+        if (sessionStorage.getItem("next") == "borrow") {
+            $('#title').insertAdjacentHTML('beforeend', `<div class="sub header">${sessionStorage.getItem('username')}</div>`);
+        }
+
+        $('table').on('click', (e) => {
+            let el = e.target;
+            if (el.matches('td.selectable')) {
+                var code = el.dataset.code;
+            } else if (el.parentElement.matches('td.selectable')) {
+                var code = el.parentElement.dataset.code;
+            } else {
+                return false;
+            }
+
+            let index = bookList.indexOf(code);
+            bookList.splice(index, 1);
+            removeBook(index);
+
+            $('#scan').focus();
+        });
+
+        $('#scan').on('change', async (e) => {
+            let el = e.target;
+            el.disabled = true;
+
+            let code = el.value;
+
+            if (bookList.includes(code)) {
+                snackbar('已掃描!');
+                el.value = "";
+                el.disabled = false;
+
+                return false;
+            }
+
+            try {
+                let res = await axios.request({
+                    url: `./api/book/info/`,
+                    method: "POST",
+                    data: {
+                        "id": code
+                    }
+                });
+
+                let data = res.data;
+
+                if (!data.name) {
+                    snackbar("此書不存在！");
+                } else {
+                    bookList.push(code);
+                    appendBook(data.name, code);
+                }
+            } catch (error) {
+                console.error(error);
+                snackbar('Error occurred: ' + error.message);
+            } finally {
+                el.value = "";
+                el.disabled = false;
+            }
+        });
+
+        $('#finish').on('click', async (e) => {
+            let next = sessionStorage.getItem("next");
+            if (next == "borrow") {
+                var url = "./api/borrow"
+            } else if (next == "return") {
+                var url = "./api/return"
+            }
+
+            try {
+                let res = await axios.request({
+                    url: url,
+                    method: "POST",
+                    data: {
+                        books: bookList
+                    }
+                });
+
+                let data = res.data;
+                if (data.state) {
+                    snackbar('操作成功！即將回到首頁');
+                    await sleep(1500);
+                    location.href = './index';
+                } else {
+                    snackbar('操作失敗，請再試一次！');
+                }
+            } catch (error) {
+                console.error(error);
+                snackbar('Error occurred: ' + error.message);
+            }
+        });
+
+        $('#scan').focus();
+
+        function appendBook(title, code) {
+            let tbody = $('table tbody');
+            
+            tbody.insertAdjacentHTML('beforeend', `<tr><td>${title}</td><td>${code}</td><td class="selectable info" data-code="${code}"><a href="#">取消</a></td></tr>`);
+        }
+
+        function removeBook(index) {
+            let books = $$('tbody tr');
+            $('tbody').removeChild(books[index]);
+        }
 
         function snackbar(message) {
             ts('.snackbar').snackbar({
