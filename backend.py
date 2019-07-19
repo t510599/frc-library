@@ -111,24 +111,44 @@ def return_book():
     }
     return jsonify(content)
 
-@app.route('/api/register', methods=['PUT'])
+@app.route('/api/check', methods=['POST'])
+def check_username_exists():
+    json = request.get_json()
+    username = json['username']
+    user = database.query_user(username)
+    print(user)
+    if not user is None:
+        return jsonify({'status': False})
+    else:
+        return jsonify({'status': True})
+
+@app.route('/api/register', methods=['POST'])
 def api_register():
     if not request.files:
+        print("nofile")
         return jsonify({'status': 'failed', 'error': 'no_file'}), 400
-    if not 'name' in request.form:
+    if not 'username' in request.form:
+        print('no name')
         return jsonify({'status': 'failed', 'error': 'no_name'}), 400
     file = request.files['file']
-    name = request.form['name']
+    name = request.form['username']
     file.save(path.join(app.config['UPLOAD_FOLDER'], name+".png"))
+    encoding = None
     try:
         encoding = api.train(file)
     except api.NoFaceDetectedError:
-        pass
-
-    encodings[name] = encoding
-    with open('encodings.pickle', 'wb') as f:
-        pickle.dump(encodings, f)
-    return jsonify({'status': 'succeed'})
+        print('no face detected')
+    if not encoding is None:
+        encodings[name] = encoding
+        with open('encodings.pickle', 'wb') as f:
+            pickle.dump(encodings, f)
+        encoded = encoding.tostring()
+        user = database.create_user(name, encoded)
+        if not user:
+            return jsonify({'state': False, 'error': 'cannot insert new user'})
+        return jsonify({'state': True})
+    else:
+        return jsonify({'state': False, 'error': 'cannot find a face in the picture'})
 
 @app.route('/api/identify')
 def identify():

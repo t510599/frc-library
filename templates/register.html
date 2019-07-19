@@ -195,6 +195,7 @@
             let username = $('#username input').value;
             if (!await checkDuplicatedUsername(username)) {
                 $('#username .ts.input').classList.add('error');
+                $('#username input').focus();
                 snackbar('帳號無法使用!');
             } else {
                 $('#username .ts.input').classList.remove('error');
@@ -231,6 +232,7 @@
                         data: form
                     }).then((res) => {
                         let data = res.data;
+                        console.log(data.state)
                         if (data.state) {
                             snackbar('註冊成功！即將跳轉回首頁');
                             setTimeout(() => {location.href = "./index"}, 1500);

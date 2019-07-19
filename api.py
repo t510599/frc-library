@@ -15,7 +15,6 @@ def train(file_stream):
 	encodings = face_encodings(image, location)
 	return encodings[0]
 
-num = 100
 #input: an image that contains exactly one face
 #input: a dictionary represent the encodings we knew
 #output: a tuple with format (top, right, bottom, left, name)
