@@ -31,22 +31,23 @@ class LibraryDb:
 
     #note: encoding here must be a str
     def create_user(self, username, encoding):
-        if type(username) != str or encoding != str:
-            raise TypeError('both username and encoding are str')
+        if type(username) != str:
+            raise TypeError('username must be a str')
         if len(username) > 16:
             raise UsernameTooLongError('username should not exceed 16 characters')
-        db = sql.connect(self.host, self.username, self.password, self.name)
+        db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
-        if self._check_username_exists(username, cursor):
-            raise UsernameAlreadyExistsError('username already exists')
         user_id = self._get_user_count(cursor) + 1
-        command = 'INSERT INTO `frc_library`.`user` (`username`, `user_id`, `encoding`) VALUES (%s, %d, %s);'
+        command = 'INSERT INTO `frc_library`.`user` (`username`, `user_id`, `encoding`) VALUES (%s, %s, %s);'
         try:
-            cursor.execute(command, username, user_id, encoding)
+            cursor.execute(command, (username, user_id, encoding))
             db.commit()
         except sql.IntegrityError:
+            print('error occur, rollback')
             db.rollback()
             raise UsernameAlreadyExistsError('username already exists')
+        except Exception as e:
+            print('unknown err', e)
         finally:
             user = self._get_user(user_id, cursor)
             cursor.close()
@@ -56,7 +57,7 @@ class LibraryDb:
 
     def query_user(self, username):
         command = 'SELECT * FROM `frc_library`.`user` WHERE `username` = %s'
-        db = sql.connect(self.host, self.username, self.password, self.name)
+        db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
         cursor.execute(command, username)
         result = cursor.fetchone()
@@ -69,7 +70,7 @@ class LibraryDb:
 
     def query_book(self, book_id):
         command = 'SELECT * FROM `frc_library`.`books` WHERE `book_id` = %d'
-        db = sql.connect(self.host, self.username, self.password, self.name)
+        db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
         cursor.execute(command, book_id)
         result = cursor.fetchone()
@@ -87,7 +88,7 @@ class LibraryDb:
         lent_command = 'UPDATE `frc_library`.`books` SET `lent` = 1 WHERE `bookd_id` = %s'
         borrower_command = 'UPDATE `frc_library`.`books` SET `borrower_id` = %s WHERE `book_id` = %s'
         time_command = 'UPDATE `frc_library`.`books` SET `time` = {} WHERE `book_id` = %s'
-        db = sql.connect(self.host, self.username, self.password, self.name)
+        db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
         for book_id in book_ids:
             r1 = cursor.execute(lent_command, str(book_id))
@@ -107,7 +108,7 @@ class LibraryDb:
         lent_command = 'UPDATE `frc_library``books` SET `lent` = 0 WHERE `book_id` = %s'
         borrower_command = 'UPDATE `frc_library`.`books` SET `borrower_id` = NULL WHERE `book_id` = %s'
         time_command = 'UPDATE `frc_library`.`books` SET `time` = NULL WHERE `book_id` = %s'
-        db = sql.connect(self.host, self.username, self.password, self.name)
+        db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
         for book_id in book_ids:
             r1 = cursor.execute(lent_command, str(book_id))
