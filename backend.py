@@ -6,12 +6,21 @@ from model.CustomEncoder import CustomEncoder
 import pickle
 import os.path as path
 from timeit import default_timer as timer
+import flask_login
 
 app = Flask(__name__, static_folder='assets')
+manager = flask_login.LoginManager()
+manager.session_protection = 'strong'
+manager.login_view = 'login_handler'
+manager.init_app(app)
+
 #host, user, password
-database = db.LibraryDb('localhost', 'root', '')
+database = db.LibraryDb('localhost', 'root', 'Cm@Secminhr20')
+app.config.from_object('secret.config')
 app.config['JSON_AS_ASCII'] = False
 app.config['UPLOAD_FOLDER'] = "./upload"
+identified_username = None
+identify_result = False
 
 class VideoCamera(object):
     def __init__(self):
@@ -32,6 +41,8 @@ class VideoCamera(object):
         return image
     
 def gen(camera, encoding):
+    global identified_username
+    global identify_result
     while True:
         frame = camera.get_frame()
         if frame is None:
@@ -40,7 +51,7 @@ def gen(camera, encoding):
         frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
         try:
             result = api.identify(frame, encoding)
-            if result:
+            if not result is None:
                 identified_username = result
                 identify_result = True
         except api.NoFaceDetectedError:
@@ -73,17 +84,27 @@ def register():
     with open('templates/register.html', 'r') as f:
         return f.read()
 
-@app.route('/scan')
-def scan():
+@app.route('/borrow')
+@flask_login.login_required
+def borrow():
+    print('in borrow')
+    with open('templates/scan.html', 'r') as f:
+        return f.read()
+
+@app.route('/return')
+def return_page():
     with open('templates/scan.html', 'r') as f:
         return f.read()
 
 @app.route('/log')
+@flask_login.login_required
 def log():
     with open('templates/log.html', 'r') as f:
         return f.read()
+
 @app.route('/login')
-def login():
+def login_handler():
+    print('show login')
     with open('templates/login.html', 'r') as f:
         return f.read()
 
@@ -139,13 +160,13 @@ def api_register():
     except api.NoFaceDetectedError:
         print('no face detected')
     if not encoding is None:
-        encodings[name] = encoding
-        with open('encodings.pickle', 'wb') as f:
-            pickle.dump(encodings, f)
         encoded = encoding.tostring()
         user = database.create_user(name, encoded)
         if not user:
             return jsonify({'state': False, 'error': 'cannot insert new user'})
+        encodings[name] = encoding
+        with open('encodings.pickle', 'wb') as f:
+            pickle.dump(encodings, f)
         return jsonify({'state': True})
     else:
         return jsonify({'state': False, 'error': 'cannot find a face in the picture'})
@@ -156,22 +177,43 @@ def identify():
 
 @app.route('/get_state')
 def get_state():
+    print('inside get state')
+    start = timer()
     while not identify_result:
-        pass
-    return jsonify({'status': 'succeed',
+        end = timer()
+        if end - start > 20:
+            return jsonify({'state': False,
+                            'message':'timeout'})
+    return jsonify({'state': True,
                     'username': identified_username,
                     'avatar_path': path.join(app.config['UPLOAD_FOLDER'], identified_username+".png")})
 
+@app.route('/api/login', methods=["POST"])
+def api_login():
+    print('api login')
+    if not identified_username is None:
+        user = database.query_user(identified_username)
+        print(flask_login.login_user(user))
+        return jsonify({'state': True})
+    return jsonify({'state': False})
+
 @app.route('/api/logout')
+@flask_login.login_required
 def logout():
+    global identify_result
+    global identified_username
     identify_result = False
     identified_username = None
+    flask_login.logout_user()
     return jsonify({'status': 'succeed'}), 200
+
+#login manager
+@manager.user_loader
+def load_user(user_id):
+    return database.get_user(user_id)
 
 if __name__ == '__main__':
     encodings = dict()
-    identified_username = None
-    identify_result = False
     try:
         with open('encodings.pickle', 'rb') as f:
             encodings = pickle.load(f)

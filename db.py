@@ -68,6 +68,11 @@ class LibraryDb:
         else:
             return None
 
+    def get_user(self, uid):
+        db = sql.connect(self.host, self.user, self.password, self.name)
+        cursor = db.cursor()
+        return self._get_user(uid, cursor)
+
     def query_book(self, book_id):
         command = 'SELECT * FROM `frc_library`.`books` WHERE `book_id` = %d'
         db = sql.connect(self.host, self.user, self.password, self.name)
