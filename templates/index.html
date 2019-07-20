@@ -34,7 +34,7 @@
                     <i class="share icon"></i>
                 </div>
             </a>
-            <a class="ts negative card" href="./scan" id="return">
+            <a class="ts negative card" href="./return" id="return">
                 <div class="center aligned very padded content">
                     <div class="header">還書</div>
                 </div>
@@ -86,7 +86,7 @@
             e.preventDefault();
             sessionStorage.setItem('next', 'borrow');
 
-            location.href = './login';
+            location.href = './borrow';
         });
 
         $('#return').on('click', (e) => {
@@ -104,7 +104,7 @@
             e.preventDefault();
             sessionStorage.setItem('next', 'log');
 
-            location.href = './login';
+            location.href = './log';
         });
     </script>
 </body>

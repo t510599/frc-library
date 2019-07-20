@@ -146,7 +146,7 @@
                 let data = res.data;
 
                 if (data.state) {
-                    sessionStorage.setItem("username") = data.username;
+                    sessionStorage.setItem("username", data.username);
 
                     imageContainer.classList.remove('identifying');
                     imageContainer.classList.add('identified');
@@ -185,7 +185,7 @@
             });
         }
 
-        function ask(username, callback) {
+        async function ask(username, callback) {
             Swal.fire({
                 title: '確認',
                 text: `${username}，這是你的帳號嗎？`,
@@ -197,7 +197,13 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.value) {
-                    callback();
+                    //TODO: send confirm request here so back can know that the user confirms
+                    axios.request({
+                        url: `./api/login`,
+                        method: `POST`
+                    }).then((res) => {
+                        callback();
+                    });
                 } else if (result.dismiss === Swal.DismissReason.cancel) {
                     location.href = "./index";
                 }
@@ -214,7 +220,7 @@
                     break;
                 case "borrow":
                 default:
-                    location.href = "./scan";
+                    location.href = "./borrow";
             }
         }
 
