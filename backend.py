@@ -15,7 +15,7 @@ manager.login_view = 'login_handler'
 manager.init_app(app)
 
 #host, user, password
-database = db.LibraryDb('localhost', 'root', 'Cm@Secminhr20')
+database = db.LibraryDb('localhost', 'root', '')
 app.config.from_object('secret.config')
 app.config['JSON_AS_ASCII'] = False
 app.config['UPLOAD_FOLDER'] = "./upload"
@@ -109,8 +109,9 @@ def login_handler():
         return f.read()
 
 #apis
-@app.route('/api/book/info')
+@app.route('/api/book/info', methods=["POST"])
 def book_info():
+    print('in book info')
     json = request.get_json()
     book_id = json['id']
     book = database.query_book(book_id)
