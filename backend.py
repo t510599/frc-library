@@ -123,6 +123,10 @@ def book_info():
         }
         return jsonify(content)
 
+@app.route('/api/borrow', methods=["POST"])
+def borrow_book():
+    print('in borrow')
+
 @app.route('/api/return')
 def return_book():
     json = request.get_json()

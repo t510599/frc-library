@@ -3,13 +3,13 @@ from . import Book
 from . import User
 class CustomEncoder(JSONEncoder):
 	def default(self, obj):
-		if isinstance(obj, User):
+		if isinstance(obj, User.User):
 			return {
 				'uid': obj.uid,
 				'username': obj.username,
 				'encoding': obj.encoding
 			}
-		elif isinstance(obj, Book):
+		elif isinstance(obj, Book.Book):
 			return {
 				'book_id': obj.book_id,
 				'name': obj.name,

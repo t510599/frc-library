@@ -1,5 +1,6 @@
 import pymysql as sql
 from model.User import User
+from model.Book import Book
 from datetime import datetime
 
 class UsernameTooLongError(Exception):
@@ -74,7 +75,7 @@ class LibraryDb:
         return self._get_user(uid, cursor)
 
     def query_book(self, book_id):
-        command = 'SELECT * FROM `frc_library`.`books` WHERE `book_id` = %d'
+        command = 'SELECT * FROM `frc_library`.`books` WHERE `book_id` = %s'
         db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
         cursor.execute(command, book_id)
@@ -82,10 +83,7 @@ class LibraryDb:
         cursor.close()
         db.close()
         if result:
-            if len(result) > 3:
-                return Book(result[0], result[1], bool(result[2]), result[3], result[4])
-            else:
-                return Book(result[0], result[1], bool(result[2]))
+            return Book(result[0], result[1], bool(result[2]), result[3], result[4])
         else:
             return None
 
