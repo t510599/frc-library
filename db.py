@@ -87,12 +87,13 @@ class LibraryDb:
         else:
             return None
 
-    def borrow_book(self, book_ids, uid):
+    def borrow_book(self, book_ids, current_user):
         lent_command = 'UPDATE `frc_library`.`books` SET `lent` = 1 WHERE `bookd_id` = %s'
         borrower_command = 'UPDATE `frc_library`.`books` SET `borrower_id` = %s WHERE `book_id` = %s'
         time_command = 'UPDATE `frc_library`.`books` SET `time` = {} WHERE `book_id` = %s'
         db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
+        uid = current_user.uid
         for book_id in book_ids:
             r1 = cursor.execute(lent_command, str(book_id))
             r2 = cursor.execute(borrower_command, str(uid), str(book_id))
