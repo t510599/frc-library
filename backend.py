@@ -205,7 +205,9 @@ def identify():
 
 @app.route('/get_state')
 def get_state():
-    print('identify_result', identify_result)
+    global identify_result
+    identify_result = False
+    print(identify_result)
     start = timer()
     while not identify_result:
         end = timer()
