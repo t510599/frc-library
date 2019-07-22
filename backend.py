@@ -125,15 +125,21 @@ def book_info():
 
 @app.route('/api/borrow', methods=["POST"])
 def borrow_book():
-    print('in borrow')
+    json = request.get_json()
+    book_ids = json['books']
+    result = database.borrow_book(book_ids, flask_login.current_user)
+    content = {
+        state: result
+    }
+    return jsonify(content)
 
 @app.route('/api/return')
 def return_book():
     json = request.get_json()
-    book_ids = json['id']
-    result = database.return_book()
+    book_ids = json['books']
+    result = database.return_book(book_ids)
     content = {
-        'status': result
+        'state': result
     }
     return jsonify(content)
 
