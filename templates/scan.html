@@ -194,6 +194,12 @@
 
         $('#scan').focus();
 
+        async function sleep(ms) {
+            return new Promise((res, rej) => {
+                setTimeout(() => { res() }, ms);
+            });
+        }
+
         function appendBook(title, code) {
             let tbody = $('table tbody');
             
