@@ -15,7 +15,7 @@ manager.login_view = 'login_handler'
 manager.init_app(app)
 
 #host, user, password
-database = db.LibraryDb('localhost', 'root', 'Cm@Secminhr20')
+database = db.LibraryDb('localhost', 'root', '')
 app.config.from_object('secret.config')
 app.config['JSON_AS_ASCII'] = False
 app.config['UPLOAD_FOLDER'] = "./upload"
