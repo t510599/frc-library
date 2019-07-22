@@ -205,7 +205,7 @@ def identify():
 
 @app.route('/get_state')
 def get_state():
-    print(identify_result)
+    print('identify_result', identify_result)
     start = timer()
     while not identify_result:
         end = timer()
@@ -233,7 +233,6 @@ def api_login():
     return jsonify({'state': False})
 
 @app.route('/api/logout')
-@flask_login.login_required
 def logout():
     global identify_result
     global identified_username
@@ -249,7 +248,7 @@ def load_user(user_id):
 
 @manager.unauthorized_handler
 def unauthorized_handler():
-    return redirect(url_for('login_handler', next=request.path))
+    return redirect(url_for('login_handler') + '?next=.' + request.path)
 
 if __name__ == '__main__':
     encodings = dict()
