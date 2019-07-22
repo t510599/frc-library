@@ -11,7 +11,6 @@ import flask_login
 app = Flask(__name__, static_folder='assets')
 manager = flask_login.LoginManager()
 manager.session_protection = 'strong'
-manager.login_view = 'login_handler'
 manager.init_app(app)
 
 #host, user, password
@@ -206,6 +205,7 @@ def identify():
 
 @app.route('/get_state')
 def get_state():
+    print(identify_result)
     start = timer()
     while not identify_result:
         end = timer()
@@ -246,6 +246,10 @@ def logout():
 @manager.user_loader
 def load_user(user_id):
     return database.get_user(user_id)
+
+@manager.unauthorized_handler
+def unauthorized_handler():
+    return redirect(url_for('login_handler', next=request.path))
 
 if __name__ == '__main__':
     encodings = dict()
