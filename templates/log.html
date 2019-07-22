@@ -85,7 +85,7 @@
         // fetch user log
         (async () => {
             try {
-                let res = await axios.request({
+                var res = await axios.request({
                     url: './api/user',
                     method: 'GET'
                 });
@@ -105,7 +105,7 @@
             if (data.books.length) {
                 $('tbody').innerHTML = "";
                 data.books.forEach((e, _i) => {
-                    $('tbody').insertAdjacentHTML('beforeend', `<tr><td>${e.name}</td><td>${e.time}</td></tr>`);
+                    $('tbody').insertAdjacentHTML('beforeend', `<tr><td>${e.name}</td><td class="collapsing">${e.time}</td></tr>`);
                 });
             }
         })();
