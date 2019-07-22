@@ -88,42 +88,48 @@ class LibraryDb:
             return None
 
     def borrow_book(self, book_ids, current_user):
-        lent_command = 'UPDATE `frc_library`.`books` SET `lent` = 1 WHERE `bookd_id` = %s'
-        borrower_command = 'UPDATE `frc_library`.`books` SET `borrower_id` = %s WHERE `book_id` = %s'
-        time_command = 'UPDATE `frc_library`.`books` SET `time` = {} WHERE `book_id` = %s'
+        lent_command = 'UPDATE `frc_library`.`books` SET `lent` = 1, `borrower_id` = %s, `time` = %s WHERE `book_id` = %s AND `lent` = 0;'
         db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
         uid = current_user.uid
+        time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        results = []
         for book_id in book_ids:
-            r1 = cursor.execute(lent_command, str(book_id))
-            r2 = cursor.execute(borrower_command, str(uid), str(book_id))
-            r3 = cursor.execute(time_command.format(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), str(book_id))
+            r1 = cursor.execute(lent_command, (uid, time, book_id))
             db.commit()
-            if r1 != 1 or r2 != 1 or r3 != 1:
+            if r1 != 1:
                 db.rollback()
-                cursor.close()
-                db.close()
-                return False
+                results.append(False)
+            else:
+                results.append(True)
         cursor.close()
         db.close()
-        return True
+        return results
 
     def return_book(self, book_ids):
-        lent_command = 'UPDATE `frc_library``books` SET `lent` = 0 WHERE `book_id` = %s'
-        borrower_command = 'UPDATE `frc_library`.`books` SET `borrower_id` = NULL WHERE `book_id` = %s'
-        time_command = 'UPDATE `frc_library`.`books` SET `time` = NULL WHERE `book_id` = %s'
+        lent_command = 'UPDATE `frc_library`.`books` SET `lent` = 0, `borrower_id` = NULL, `time` = NULL WHERE `book_id` = %s AND `lent` = 1;'
         db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
+        results = []
         for book_id in book_ids:
-            r1 = cursor.execute(lent_command, str(book_id))
-            r2 = cursor.execute(borrower_command, str(book_id))
-            r3 = cursor.execute(time_command, str(book_id))
-            db,commit()
-            if r1 != 1 or r2 != 1 or r3 != 1:
+            r1 = cursor.execute(lent_command, book_id)
+            db.commit()
+            if r1 != 1:
                 db.rollback()
-                cursor.close()
-                db.close()
-                return False
+                results.append(False)
+            else:
+                results.append(True)
         cursor.close()
         db.close()
-        return True
+        return results
+
+    def get_user_log(self, user_id):
+        command = 'SELECT * FROM `frc_library`.`books` WHERE `borrower_id` = %s'
+        db = sql.connect(self.host, self.user, self.password, self.name)
+        cursor = db.cursor()
+        cursor.execute(command, user_id)
+        results = cursor.fetchall()
+        books = []
+        for result in results:
+            books.append(Book(result[0], result[1], bool(result[2]), result[3], result[4]))
+        return books

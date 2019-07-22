@@ -15,7 +15,7 @@ manager.login_view = 'login_handler'
 manager.init_app(app)
 
 #host, user, password
-database = db.LibraryDb('localhost', 'root', '')
+database = db.LibraryDb('localhost', 'root', 'Cm@Secminhr20')
 app.config.from_object('secret.config')
 app.config['JSON_AS_ASCII'] = False
 app.config['UPLOAD_FOLDER'] = "./upload"
@@ -127,21 +127,39 @@ def book_info():
 def borrow_book():
     json = request.get_json()
     book_ids = json['books']
-    result = database.borrow_book(book_ids, flask_login.current_user)
-    content = {
-        state: result
-    }
-    return jsonify(content)
+    results = database.borrow_book(book_ids, flask_login.current_user)
+    err_id = []
+    for i in range(len(results)):
+        result = results[i]
+        if not result:
+            err_id.append(book_ids[i])
+    if err_id:
+        content = {
+            'state': False,
+            'err': err_id
+        }
+        return jsonify(content)
+    else:
+        return jsonify({'state': True})
 
-@app.route('/api/return')
+@app.route('/api/return', methods=["POST"])
 def return_book():
     json = request.get_json()
     book_ids = json['books']
-    result = database.return_book(book_ids)
-    content = {
-        'state': result
-    }
-    return jsonify(content)
+    results = database.return_book(book_ids)
+    err_id = []
+    for i in range(len(results)):
+        result = results[i]
+        if not result:
+            err_id.append(book_ids[i])
+    if err_id:
+        content = {
+            'state': False,
+            'err': err_id
+        }
+        return jsonify(content)
+    else:
+        return jsonify({'state': True})
 
 @app.route('/api/check', methods=['POST'])
 def check_username_exists():
@@ -188,7 +206,6 @@ def identify():
 
 @app.route('/get_state')
 def get_state():
-    print('inside get state')
     start = timer()
     while not identify_result:
         end = timer()
@@ -199,9 +216,16 @@ def get_state():
                     'username': identified_username,
                     'avatar_path': path.join(app.config['UPLOAD_FOLDER'], identified_username+".png")})
 
+@app.route('/api/user')
+def user_log():
+    uid = flask_login.current_user.uid
+    books = database.get_user_log(uid)
+    return jsonify({
+        'books': books
+    })
+
 @app.route('/api/login', methods=["POST"])
 def api_login():
-    print('api login')
     if not identified_username is None:
         user = database.query_user(identified_username)
         print(flask_login.login_user(user))

@@ -18,4 +18,5 @@ class CustomEncoder(JSONEncoder):
 				'time': obj.time
 			}
 		else:
-			return JSONEncoder.default(obj)
+			print(obj)
+			return JSONEncoder.default(self, obj)
