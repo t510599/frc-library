@@ -250,7 +250,11 @@ def load_user(user_id):
 
 @manager.unauthorized_handler
 def unauthorized_handler():
-    return redirect(url_for('login_handler') + '?next=.' + request.path)
+    response = jsonify()
+    response.status_code = 301
+    response.headers['location'] = './login?next=.' + request.path
+    response.autocorrect_location_header = False
+    return response
 
 if __name__ == '__main__':
     encodings = dict()
