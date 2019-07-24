@@ -235,7 +235,7 @@
                         console.log(data.state)
                         if (data.state) {
                             snackbar('註冊成功！即將跳轉回首頁');
-                            setTimeout(() => {location.href = "./index"}, 1500);
+                            setTimeout(() => { window.location.assign("./index"); }, 1500);
                         } else {
                             switch (res.data.message) {
                                 case "no_file":
