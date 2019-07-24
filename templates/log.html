@@ -79,7 +79,7 @@
         if (sessionStorage.getItem("username")) {
             $('#username').textContent = `讀者 ${sessionStorage.getItem("username")}，您好！`;
         } else {
-            location.href = "./index";
+            window.location.assign("./index");
         }
 
         // fetch user log

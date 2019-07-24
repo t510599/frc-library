@@ -86,7 +86,7 @@
             e.preventDefault();
             sessionStorage.setItem('next', 'borrow');
 
-            location.href = './borrow';
+            window.location.assign(el.href);
         });
 
         $('#return').on('click', (e) => {
@@ -95,7 +95,7 @@
             e.preventDefault();
             sessionStorage.setItem('next', 'return');
 
-            location.href = el.href;
+            window.location.assign(el.href);
         });
 
         $('#log').on('click', (e) => {
@@ -104,7 +104,7 @@
             e.preventDefault();
             sessionStorage.setItem('next', 'log');
 
-            location.href = './log';
+            window.location.assign(el.href);
         });
     </script>
 </body>
