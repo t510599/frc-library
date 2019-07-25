@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="assets/animate.css">
     <title>Self-service Library</title>
     <style>
+        html {
+            font-size: 15px;
+        }
+
         body {
             display: flex;
             flex-direction: column;
@@ -92,14 +96,16 @@
         var $ = (selector) => { return document.querySelector(selector); }
         var $$ = (selector) => { return document.querySelectorAll(selector); }
 
+        const mode = sessionStorage.getItem("next");
+
         var bookList = [];
         let title =  {
             "borrow": "借書",
             "return": "還書"
         }
 
-        $('#title').textContent = title[sessionStorage.getItem("next")];
-        if (sessionStorage.getItem("next") == "borrow") {
+        $('#title').textContent = title[mode];
+        if (mode == "borrow") {
             $('#title').insertAdjacentHTML('beforeend', `<div class="sub header">${sessionStorage.getItem('username')}</div>`);
         }
 
@@ -139,14 +145,27 @@
                     url: `./api/book/info`,
                     method: "POST",
                     data: {
-                        "id": code
+                        "id": code,
+                        "mode": mode
                     }
                 });
 
                 let data = res.data;
 
-                if (!data.name) {
-                    snackbar("此書不存在！");
+                if (!data.state && !data.name) {
+                    switch (data.error) {
+                        case 'book status not match':
+                            if (mode == "borrow") {
+                                snackbar("此書已被他人借閱！");
+                            } else if (mode == 'return'){
+                                snackbar("此書已在書庫中");
+                            }
+                            break;
+                        case 'cannot find the book':
+                        default:
+                            snackbar("此書不存在！");
+                            break;
+                    }
                 } else {
                     bookList.push(code);
                     appendBook(data.name, code);

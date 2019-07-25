@@ -12,6 +12,10 @@
     <script src="assets/sweetalert2.js"></script>
     <title>Self-service Library</title>
     <style>
+        html {
+            font-size: 15px;
+        }
+
         strong {
             font-weight: 800;
         }
@@ -161,6 +165,8 @@
                             method: `GET`
                         }).then((res) => {
                             navigate();
+                        }).catch((err) => {
+                            snackbar("登入時發生錯誤!");
                         });
                     });
                 } else {
