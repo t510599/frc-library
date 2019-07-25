@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="assets/animate.css">
     <title>Self-service Library</title>
     <style>
+        html {
+            font-size: 15px;
+        }
+
         #main {
             margin: auto;
             max-width: 500px;
@@ -80,31 +84,13 @@
         axios.get('./api/logout');
         sessionStorage.removeItem("username");
 
-        $('#borrow').on('click', (e) => {
-            let el = e.currentTarget;
+        $$('#borrow, #return, #log').forEach((el) => {
+            el.on('click', (e) => {
+                e.preventDefault();
+                sessionStorage.setItem('next', el.id);
 
-            e.preventDefault();
-            sessionStorage.setItem('next', 'borrow');
-
-            window.location.assign(el.href);
-        });
-
-        $('#return').on('click', (e) => {
-            let el = e.currentTarget;
-
-            e.preventDefault();
-            sessionStorage.setItem('next', 'return');
-
-            window.location.assign(el.href);
-        });
-
-        $('#log').on('click', (e) => {
-            let el = e.currentTarget;
-
-            e.preventDefault();
-            sessionStorage.setItem('next', 'log');
-
-            window.location.assign(el.href);
+                window.location.assign(el.href);
+            });
         });
     </script>
 </body>
