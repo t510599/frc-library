@@ -162,6 +162,7 @@
         });
 
         $('#finish').on('click', async (e) => {
+            e.preventDefault();
             let next = sessionStorage.getItem("next");
             if (next == "borrow") {
                 var url = "./api/borrow"
@@ -182,7 +183,7 @@
                 if (data.state) {
                     snackbar('操作成功！即將回到首頁');
                     await sleep(1500);
-                    location.href = './index';
+                    window.location.assign('./index');
                 } else {
                     snackbar('操作失敗，請再試一次！');
                 }

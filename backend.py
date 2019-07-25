@@ -236,11 +236,11 @@ def user_log():
         'books': books
     })
 
-@app.route('/api/login', methods=["POST"])
+@app.route('/api/login', methods=["GET"])
 def api_login():
     if not identified_username is None:
         user = database.query_user(identified_username)
-        print(flask_login.login_user(user))
+        print('login user', flask_login.login_user(user))
         return jsonify({'state': True})
     return jsonify({'state': False})
 
@@ -261,8 +261,8 @@ def load_user(user_id):
 @manager.unauthorized_handler
 def unauthorized_handler():
     response = jsonify()
-    response.status_code = 301
-    response.headers['location'] = './login?next=.' + request.path
+    response.status_code = 302
+    response.headers['location'] = './login'
     response.autocorrect_location_header = False
     return response
 

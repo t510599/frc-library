@@ -125,10 +125,11 @@
         var $$ = (selector) => { return document.querySelectorAll(selector); }
 
         $('#return').on('click', (e) => {
+            e.preventDefault();
             sessionStorage.removeItem("username");
             sessionStorage.removeItem("next");
 
-            location.href = `./index`;
+            window.location.assign("./index");
         });
 
         async function enableStream() {
@@ -154,7 +155,14 @@
                     description.classList.remove('animated', 'flash', 'infinite');
 
                     await sleep(500);
-                    ask(data.username, navigate);
+                    ask(data.username, () => {
+                        axios.request({
+                            url: `./api/login`,
+                            method: `GET`
+                        }).then((res) => {
+                            navigate();
+                        });
+                    });
                 } else {
                     imageContainer.classList.remove('identifying');
                     imageContainer.classList.add('not', 'identified');
@@ -163,7 +171,7 @@
                     description.classList.remove('animated', 'flash', 'infinite');
 
                     await sleep(1000);
-                    location.href = './index';
+                    window.location.assign('./index');
                 }
             } catch (error) {
                 console.log(error);
@@ -195,15 +203,9 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.value) {
-                    //TODO: send confirm request here so back can know that the user confirms
-                    axios.request({
-                        url: `./api/login`,
-                        method: `POST`
-                    }).then((res) => {
-                        callback();
-                    });
+                    callback();
                 } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    location.href = "./index";
+                    window.location.assign("./index");
                 }
             });
         }
@@ -214,11 +216,12 @@
 
             switch (next) {
                 case "log":
-                    location.href = "./log";
+                    window.location.assign("./log");
                     break;
                 case "borrow":
                 default:
-                    location.href = "./borrow";
+                    window.location.assign("./borrow");
+                    break;
             }
         }
 
