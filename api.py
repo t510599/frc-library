@@ -28,6 +28,7 @@ def identify(image, known_dict):
 		return None
 	index = argmin(distances)
 	if distances[index] <= 0.4:
+
 		return list(known_dict.keys())[index]
 	else:
 		return None

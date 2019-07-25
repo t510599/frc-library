@@ -2,6 +2,7 @@ import pymysql as sql
 from model.User import User
 from model.Book import Book
 from datetime import datetime
+import numpy as np
 
 class UsernameTooLongError(Exception):
     pass
@@ -74,8 +75,19 @@ class LibraryDb:
         cursor = db.cursor()
         return self._get_user(uid, cursor)
 
+    def query_user_encodings(self):
+        db = sql.connect(self.host, self.user, self.password, self.name)
+        cursor = db.cursor()
+        command = 'SELECT `username`, `encoding` FROM `frc_library`.`user`;'
+        cursor.execute(command)
+        results = cursor.fetchall()
+        encodings = dict()
+        for result in results:
+            encodings[result[0]] = np.fromstring(result[1], dtype=np.float64)
+        return encodings
+
     def query_book(self, book_id):
-        command = 'SELECT * FROM `frc_library`.`books` WHERE `book_id` = %s'
+        command = 'SELECT * FROM `frc_library`.`books` WHERE `book_id` = %s;'
         db = sql.connect(self.host, self.user, self.password, self.name)
         cursor = db.cursor()
         cursor.execute(command, book_id)
