@@ -110,14 +110,24 @@ def login_handler():
 #apis
 @app.route('/api/book/info', methods=["POST"])
 def book_info():
-    print('in book info')
     json = request.get_json()
     book_id = json['id']
+    mode = json['mode']
     book = database.query_book(book_id)
     if book != None:
-        return jsonify(book)
+        if mode == 'borrow' and not book.lent:
+            return jsonify(book)
+        elif mode == 'return' and book.lent:
+            return jsonify(book)
+        else:
+            content = {
+                state: False,
+                'error': 'book status not match'
+            }
+            return jsonify(content)
     else:
         content = {
+            state: False,
             'error': 'cannot find the book'
         }
         return jsonify(content)
