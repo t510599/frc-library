@@ -14,7 +14,7 @@ manager.session_protection = 'strong'
 manager.init_app(app)
 
 #host, user, password
-database = db.LibraryDb('localhost', 'root', '')
+database = db.LibraryDb('', '', '')
 app.config.from_object('secret.config')
 app.config['JSON_AS_ASCII'] = False
 app.config['UPLOAD_FOLDER'] = "./upload"
@@ -38,24 +38,17 @@ class VideoCamera(object):
     def get_frame(self):
         _success, image = self.video.read()
         return image
-    
-def gen(camera, encoding):
+
+def gen(camera):
     global identified_username
     global identify_result
     while True:
         frame = camera.get_frame()
+        encoding = encodings
         if frame is None:
             camera.refresh()
+            del encoding
             continue
-        frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-        try:
-            result = api.identify(frame, encoding)
-            if not result is None:
-                identified_username = result
-                identify_result = True
-        except api.NoFaceDetectedError:
-            pass
-        frame = cv2.resize(frame, (0, 0), fx=2, fy=2)
         height = frame.shape[0]
         width = frame.shape[1]
         small = min(height, width)
@@ -70,11 +63,22 @@ def gen(camera, encoding):
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
 
+        frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+        try:
+            result = api.identify(frame, encoding)
+            if not result is None:
+                identified_username = result
+                identify_result = True
+        except api.NoFaceDetectedError:
+            pass
+        del encoding
+
 
 #page provider
 @app.route('/')
 @app.route('/index')
 def index():
+    print(encodings.keys())
     with open('templates/index.html', 'r') as f:
         return f.read()
 
@@ -115,9 +119,7 @@ def book_info():
     mode = json['mode']
     book = database.query_book(book_id)
     if book != None:
-        if mode == 'borrow' and not book.lent:
-            return jsonify(book)
-        elif mode == 'return' and book.lent:
+        if book.lent != (mode == 'borrow'):
             return jsonify(book)
         else:
             content = {
@@ -211,16 +213,29 @@ def api_register():
 
 @app.route('/api/identify')
 def identify():
-    return Response(gen(VideoCamera(), encodings), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen(VideoCamera()), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+#should fetch current encodings from database and return it
+def fetch_encodings():
+    return database.query_user_encodings()
+
+def save_encoding_as_pickle(encoding):
+    with open('encodings.pickle', 'wb') as f:
+        pickle.dump(encoding, f)
 
 @app.route('/get_state')
 def get_state():
     global identify_result
+    global encodings
     identify_result = False
-    print(identify_result)
     start = timer()
+    new_fetched = False
     while not identify_result:
         end = timer()
+        if end - start > 5 and not new_fetched:
+            encodings = fetch_encodings()
+            save_encoding_as_pickle(encodings)
+            new_fetched = True
         if end - start > 20:
             return jsonify({'state': False,
                             'message':'timeout'})
