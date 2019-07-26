@@ -123,13 +123,13 @@ def book_info():
             return jsonify(book)
         else:
             content = {
-                state: False,
+                "state": False,
                 'error': 'book status not match'
             }
             return jsonify(content)
     else:
         content = {
-            state: False,
+            "state": False,
             'error': 'cannot find the book'
         }
         return jsonify(content)
