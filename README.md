@@ -4,6 +4,7 @@ For 行動學習推動計畫 期中發表會
 
 # Requirements
 - Flask
+- flask-login
 - numpy
 - opencv (with [freetype](https://docs.opencv.org/master/d9/dfa/classcv_1_1freetype_1_1FreeType2.html) support)
 - [ageitgey/face_recognition](https://github.com/ageitgey/face_recognition)
