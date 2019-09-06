@@ -129,7 +129,7 @@ def book_info():
             return jsonify(content)
     else:
         content = {
-            state: False,
+            "state": False,
             'error': 'cannot find the book'
         }
         return jsonify(content)
